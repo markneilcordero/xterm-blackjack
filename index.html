@@ -115,6 +115,11 @@
             <button class="btn btn-outline-light me-2 bet-btn" data-amount="500">$500</button>
             <button class="btn btn-outline-warning bet-btn" data-amount="all">All In</button>
           </div>
+          <!-- Yes/No Confirmation Buttons -->
+          <div class="text-center mt-3" id="confirmBetButtons" style="display: none;">
+            <button class="btn btn-outline-success me-2" id="yesBtn">✅ Yes</button>
+            <button class="btn btn-outline-danger" id="noBtn">❌ No</button>
+          </div>
         </div>
       </div>
     </div>
@@ -277,6 +282,7 @@
         confirmingBet = true;
         term.writeln(`📝 Confirm your bet of $${currentBet}? (yes/no)`); // Use currentBet here
         term.write("> ");
+        $("#confirmBetButtons").show(); // Show confirmation buttons
       }
 
       // Game Actions
@@ -478,6 +484,21 @@
           term.writeln(bet.toString()); // Echo the chosen amount to terminal
           confirmBet(); // trigger confirmation
         });
+
+        // Add click events for Yes/No buttons
+        $("#yesBtn").on("click", () => {
+          if (!confirmingBet) return;
+          term.writeln("yes");
+          term.onData("\\r"); // simulate Enter key to confirm
+          $("#confirmBetButtons").hide();
+        });
+
+        $("#noBtn").on("click", () => {
+          if (!confirmingBet) return;
+          term.writeln("no");
+          term.onData("\\r"); // simulate Enter key to cancel
+          $("#confirmBetButtons").hide();
+        });
       });
 
       term.onData((key) => {
@@ -513,6 +534,7 @@
                 confirmingBet = false;
                 awaitingBet = false;
                 betInputBuffer = "";
+                $("#confirmBetButtons").hide(); // Hide confirmation buttons
 
                 // --- Start the actual game --- 
                 createDeck();
@@ -544,6 +566,7 @@
                 betInputBuffer = "";
                 currentBet = 0; // Reset current bet
                 confirmingBet = false;
+                $("#confirmBetButtons").hide(); // Hide confirmation buttons
                 term.write("> ");
                 return;
               }
