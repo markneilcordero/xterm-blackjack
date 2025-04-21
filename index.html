@@ -269,7 +269,14 @@
           "👤 Your Hand: " + renderHand(playerHand) + ` (Total: ${total})`
         );
         term.writeln("");
+
         checkPlayerStatus();
+
+        // Only ask again if not busted or blackjack
+        if (gameActive) {
+          term.writeln("Type 'hit' or 'stand'.");
+          term.write("> ");
+        }
       }
 
       function playerStands() {
