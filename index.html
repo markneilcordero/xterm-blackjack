@@ -66,11 +66,6 @@
   <script>
     const term = new Terminal();
     term.open(document.getElementById('terminal'));
-    
-    term.clear();
-    writeTopBar();
-    term.writeln("Type 'start' to begin or 'rules' for help.\n");
-    term.write('> ');
 
 
     function writeTopBar() {
@@ -293,8 +288,6 @@
         // Execute command
         switch (cmd) {
           case 'start':
-            term.clear(); // Clear before new game
-            writeTopBar();
             startGame();
             break;
 
