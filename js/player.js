@@ -18,6 +18,10 @@ export const Player = {
   },
 
   placeBet(amount) {
+    if (amount <= 0) {
+      TerminalManager.write('❌ Bet amount must be positive.');
+      return false;
+    }
     if (amount > this.balance) {
       TerminalManager.write(`❌ Not enough balance. Your current balance is $${this.balance}`);
       return false;
@@ -48,6 +52,36 @@ export const Player = {
     }
 
     return total;
+  },
+
+  canDoubleDown() {
+    // Typically allowed only on the first two cards
+    return this.hand.length === 2 && this.balance >= this.betAmount;
+  },
+
+  canSurrender() {
+    // Typically allowed only on the first two cards, before hitting
+    return this.hand.length === 2;
+  },
+
+  doubleBet() {
+    if (this.balance < this.betAmount) {
+      TerminalManager.write('❌ Not enough balance to double down.');
+      return false;
+    }
+    this.balance -= this.betAmount;
+    this.betAmount *= 2;
+    this.saveBalance();
+    TerminalManager.write(`💰 Bet doubled to $${this.betAmount}.`);
+    return true;
+  },
+
+  surrenderBet() {
+    const refund = this.betAmount / 2;
+    this.balance += refund; // Get half the bet back
+    this.saveBalance();
+    TerminalManager.write(`🏳️ You surrendered. Half bet ($${refund}) returned. Balance: $${this.balance}`);
+    // The other half is lost, which is handled by the 'lose' outcome in game.js
   },
 
   win() {

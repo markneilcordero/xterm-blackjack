@@ -79,7 +79,7 @@ export const Game = {
       TerminalManager.write('You cannot hit now.');
       return;
     }
-    if (Player.getHand().length === 0) {
+    if (Player.hand.length === 0) { // Use Player.hand directly or add Player.getHand()
         TerminalManager.write('Place a bet first using "bet <amount>".');
         return;
     }
@@ -106,7 +106,7 @@ export const Game = {
       TerminalManager.write('Game is not active.');
       return;
     }
-     if (Player.getHand().length === 0) {
+     if (Player.hand.length === 0) { // Use Player.hand directly or add Player.getHand()
         TerminalManager.write('Place a bet first using "bet <amount>".');
         return;
     }
@@ -118,13 +118,14 @@ export const Game = {
     let dealerTotal = this.calculateHandValue(dealerHand);
     TerminalManager.write(`Dealer's Full Hand: ${this.formatHand(dealerHand)} (Total: ${dealerTotal})`);
 
-    // Dealer hits until 17 or more
-    while (dealerTotal < 17) {
+    // Dealer hits until 17 or more (including soft 17)
+    while (dealerTotal < 17 || (dealerTotal === 17 && dealerHand.some(card => card.rank === 'A' && card.value === 11))) {
       TerminalManager.write('Dealer hits.');
       const card = Deck.drawCard();
       dealerHand.push(card);
+      // Recalculate dealer total *after* potentially changing Ace value
       dealerTotal = this.calculateHandValue(dealerHand);
-      TerminalManager.write(`Dealer draws: ${this.formatCard(card)} (Total: ${dealerTotal})`);
+      TerminalManager.write(`Dealer draws: ${this.formatCard(card)} (New Total: ${dealerTotal})`);
     }
 
     const playerTotal = Player.getHandValue();
@@ -133,22 +134,64 @@ export const Game = {
     if (dealerTotal > 21) {
       TerminalManager.write('Dealer busts! 🎉 You win!');
       outcome = 'wins';
-      Player.updateBalance(currentBet * 2); // Win bet amount (1:1 payout)
+      Player.win(); // Use Player.win() which includes balance update
     } else if (playerTotal > dealerTotal) {
       TerminalManager.write('🎉 You win!');
       outcome = 'wins';
-      Player.updateBalance(currentBet * 2); // Win bet amount
+      Player.win(); // Use Player.win()
     } else if (dealerTotal === playerTotal) {
       TerminalManager.write('🤝 Push! It\'s a tie.');
       outcome = 'draws';
-      Player.updateBalance(currentBet); // Return original bet
+      Player.push(); // Use Player.push()
     } else {
       TerminalManager.write('😢 Dealer wins.');
       outcome = 'losses';
-      // Player balance already reduced by placeBet, no update needed on loss
+      Player.lose(); // Use Player.lose()
     }
 
     this.endGame(outcome);
+  },
+
+  doubleDown() {
+    if (!gameActive || playerStand) {
+      TerminalManager.write('You cannot double down now.');
+      return;
+    }
+    if (!Player.canDoubleDown()) {
+      TerminalManager.write('❌ Cannot double down. Must have exactly two cards and sufficient balance.');
+      return;
+    }
+
+    if (Player.doubleBet()) {
+      TerminalManager.write('Receiving one more card...');
+      const card = Deck.drawCard();
+      Player.receiveCard(card);
+      const total = Player.getHandValue();
+      TerminalManager.write(`You drew: ${this.formatCard(card)}`);
+      TerminalManager.write(`Your Hand: ${this.formatHand(Player.hand)} (Total: ${total})`); // Use Player.hand
+
+      if (total > 21) {
+        TerminalManager.write('💥 Bust! You lose.');
+        this.endGame('losses');
+      } else {
+        // Doubling down forces a stand
+        this.stand();
+      }
+    }
+  },
+
+  surrender() {
+    if (!gameActive || playerStand) {
+      TerminalManager.write('You cannot surrender now.');
+      return;
+    }
+    if (!Player.canSurrender()) {
+      TerminalManager.write('❌ Cannot surrender. Must have exactly two cards.');
+      return;
+    }
+
+    Player.surrenderBet();
+    this.endGame('losses'); // Surrender counts as a loss for stats, balance adjusted in Player
   },
 
   // Helper function to end the game and update stats
@@ -159,11 +202,11 @@ export const Game = {
     }
     gameActive = false;
     playerStand = false;
-    TerminalManager.write(`Your balance: $${Player.getBalance()}`); // Show updated balance
-    TerminalManager.write('--- Game Over ---');
-    TerminalManager.write('Type "start" for a new game, or "stats" to see statistics.');
+    // Balance message is now handled by Player.win/push/lose/surrenderBet
+    // TerminalManager.write(`Your balance: $${Player.getBalance()}`); // Remove this line
+    TerminalManager.write('\n--- Game Over ---');
+    TerminalManager.write('Type "start" for a new game, "stats" for statistics, or "help" for commands.');
   },
-
 
   // Keep internal helpers for dealer logic and formatting if not in Player/Deck
   calculateHandValue(hand) {
@@ -174,9 +217,12 @@ export const Game = {
       total += card.value;
       if (card.rank === 'A') aces++; // Assuming card objects have a 'rank' property
     });
+    // Crucial part: Adjust Ace value from 11 to 1 if total > 21
     while (total > 21 && aces > 0) {
       total -= 10;
       aces--;
+      // Find an Ace currently valued at 11 and conceptually change its value to 1
+      // This doesn't require changing the card object itself, just the calculation
     }
     return total;
   },
