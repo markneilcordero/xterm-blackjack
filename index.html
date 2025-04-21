@@ -246,20 +246,22 @@
       if (result === 'draw') stats.draws++;
       if (calculateHandValue(playerHand) === 21 && playerHand.length === 2) stats.blackjacks++;
 
-      // Add history log
+      // Update history
       const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
-      const gameSummary = {
+      history.unshift({
         result,
         player: calculateHandValue(playerHand),
         dealer: calculateHandValue(dealerHand),
         timestamp: new Date().toLocaleString()
-      };
-      history.unshift(gameSummary); // add to top
-      if (history.length > 5) history.pop(); // keep only 5 recent games
+      });
+      if (history.length > 5) history.pop();
       localStorage.setItem("blackjack_history", JSON.stringify(history));
 
       saveStats(stats);
-      term.writeln("Type 'start' to play again.");
+
+      term.writeln("\n🎲 Game Over.");
+      term.writeln("📊 Type 'stats' to view performance.");
+      term.writeln("🔁 Type 'start' to play again.");
     }
 
     // Command Parser
