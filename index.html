@@ -28,15 +28,15 @@
         border-radius: 8px;
         padding: 1rem;
         box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-        min-height: 500px; /* minimum height */
+        min-height: 400px; /* updated */
         height: auto; /* auto-expand */
-        max-height: none; /* remove scroll constraint */
-        overflow: visible; /* disable scrollbars */
+        overflow: hidden; /* updated */
       }
 
       #terminal {
         width: 100%;
-        height: auto;
+        height: 100%; /* updated */
+        font-size: 1rem; /* added */
       }
 
       .terminal-wrapper {
@@ -58,6 +58,21 @@
 
       .btn-custom {
         margin-top: 20px;
+      }
+
+      @media (max-width: 768px) {
+        #terminal {
+          font-size: 0.85rem; /* smaller font on mobile/tablet */
+        }
+
+        .terminal-wrapper {
+          min-height: 300px;
+          padding: 0.75rem;
+        }
+
+        .btn-custom .btn {
+          width: 100%;
+        }
       }
     </style>
   </head>
@@ -355,11 +370,13 @@
             case "hit":
               // term.clear(); // Clear before showing new hand - Removed, let hit logic handle output
               playerHits();
+              term.writeln('');
               break;
 
             case "stand":
               // term.clear(); // Clear before showing dealer logic - Removed, let stand logic handle output
               playerStands();
+              term.writeln('');
               break;
 
             case "rules":
