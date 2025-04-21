@@ -1,4 +1,5 @@
 // terminal.js
+import { Game } from './game.js';
 let term;
 
 export const TerminalManager = {
@@ -55,15 +56,13 @@ export const TerminalManager = {
         term.clear();
         break;
       case 'start':
-        term.writeln('Game started! Type "bet <amount>" to place a bet.');
-        // Call game start logic here
+        Game.startGame();
         break;
       case 'bet':
         if (args[1]) {
           const amount = parseInt(args[1]);
           if (!isNaN(amount)) {
-            term.writeln(`You bet $${amount}. Type "hit" or "stand".`);
-            // Call bet logic here
+            Game.bet(amount);
           } else {
             term.writeln('Invalid bet amount.');
           }
@@ -72,12 +71,10 @@ export const TerminalManager = {
         }
         break;
       case 'hit':
-        term.writeln('You chose to hit.');
-        // Call hit logic here
+        Game.hit();
         break;
       case 'stand':
-        term.writeln('You chose to stand.');
-        // Call stand logic here
+        Game.stand();
         break;
       case 'exit':
         term.writeln('Exiting game. See you again!');
