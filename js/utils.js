@@ -24,8 +24,20 @@ function calculateScore(hand) {
     return total;
   }
   
-  // Format a single card for display (e.g., A♠)
-  function formatCard(card) {
+// Get the numerical rank of a card (J, Q, K = 10, A = 11 initially)
+function getCardRank(card) {
+  const value = card.value;
+  if (value === 'A') {
+    return 11; // Treat Ace as 11 for comparison, scoring handles 1 vs 11
+  } else if (['K', 'Q', 'J'].includes(value)) {
+    return 10;
+  } else {
+    return parseInt(value);
+  }
+}
+
+// Format a single card for display (e.g., A♠)
+function formatCard(card) {
     return `${card.value}${card.suit}`;
   }
   
@@ -33,4 +45,3 @@ function calculateScore(hand) {
   function formatHand(hand) {
     return hand.map(formatCard).join(', ');
   }
-  
