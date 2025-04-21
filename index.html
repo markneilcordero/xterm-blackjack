@@ -491,16 +491,18 @@
           if (!confirmingBet) return;
           betInputBuffer = "yes";
           term.writeln("yes"); // echo it on terminal
-          term.write("\r");     // trigger Enter key
           $("#confirmBetButtons").hide();
+          // ✅ Manually call the Enter key logic
+          term._core._onData.fire("\r"); // Simulates pressing Enter
         });
 
         $("#noBtn").on("click", () => {
           if (!confirmingBet) return;
           betInputBuffer = "no";
           term.writeln("no");  // echo it on terminal
-          term.write("\r");     // trigger Enter key
           $("#confirmBetButtons").hide();
+          // ✅ Manually call the Enter key logic
+          term._core._onData.fire("\r"); // Simulates pressing Enter
         });
       });
 
