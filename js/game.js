@@ -1,5 +1,28 @@
 // game.js
 import { TerminalManager } from './terminal.js';
+import { Deck } from './deck.js';
+import { Player } from './player.js';
+import { Storage } from './storage.js';
+
+// After each game ends
+Storage.increment('games');
+Storage.increment('wins'); // or 'losses' / 'draws'
+
+// To show stats
+Storage.printStats(TerminalManager);
+
+// To reset stats
+Storage.resetStats();
+
+
+Player.init();
+Player.placeBet(100);
+Player.receiveCard(Deck.drawCard());
+Player.getHandValue();
+
+Deck.initialize();
+const card = Deck.drawCard();
+
 
 const suits = ['♠', '♥', '♦', '♣'];
 const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
