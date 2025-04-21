@@ -244,6 +244,7 @@
         );
         term.writeln("Type 'hit' or 'stand'.");
         term.writeln("");
+        term.write("> "); // Add prompt
       }
 
       function checkPlayerStatus() {
@@ -275,7 +276,7 @@
         // Only ask again if not busted or blackjack
         if (gameActive) {
           term.writeln("Type 'hit' or 'stand'.");
-          term.write("> ");
+          term.write("> "); // Add prompt
         }
       }
 
@@ -356,6 +357,7 @@
         term.writeln("\n🎲 Game Over.");
         term.writeln("📊 Type 'stats' to view performance.");
         term.writeln("🔁 Type 'start' to play again.");
+        term.write("> "); // Add prompt
       }
 
       // Command Parser
@@ -366,7 +368,7 @@
         if (key === "\r") {
           const cmd = commandBuffer.trim().toLowerCase();
           commandBuffer = ""; // reset buffer
-          // term.writeln("");   // move to new line - Removed, clear handles this
+          term.writeln(""); // ✅ ensures next output starts on a new line
 
           // Execute command
           switch (cmd) {
@@ -375,13 +377,21 @@
               break;
 
             case "hit":
-              // term.clear(); // Clear before showing new hand - Removed, let hit logic handle output
-              playerHits();
+              if (gameActive) {
+                playerHits();
+              } else {
+                term.writeln("Game not active. Type 'start' to begin.");
+                term.write("> ");
+              }
               break;
 
             case "stand":
-              // term.clear(); // Clear before showing dealer logic - Removed, let stand logic handle output
-              playerStands();
+              if (gameActive) {
+                playerStands();
+              } else {
+                term.writeln("Game not active. Type 'start' to begin.");
+                term.write("> ");
+              }
               break;
 
             case "rules":
@@ -392,6 +402,7 @@
               term.writeln("2. Face cards = 10. Aces = 1 or 11.");
               term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
               term.writeln("4. Dealer hits until 17+. Highest hand wins.");
+              term.write("> "); // Add prompt
               break;
 
             case "stats":
@@ -414,6 +425,7 @@
                 }%`
               );
               term.writeln("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+              term.write("> "); // Add prompt
               break;
 
             case "history":
@@ -433,13 +445,14 @@
                   );
                 });
               }
+              term.write("> "); // Add prompt
               break;
 
             case "reset stats":
               term.clear();
               writeTopBar();
               resetStats(); // resetStats already prints a message
-              // term.writeln("🔄 Stats and history reset."); // Removed duplicate message
+              term.write("> "); // Add prompt
               break;
 
             case "clear":
@@ -449,33 +462,36 @@
               term.writeln(
                 "Type 'start' to play, 'rules' to view how to play."
               );
+              term.write("> "); // Add prompt
               break;
 
             case "":
+              term.write("> "); // Add prompt for empty input
               break; // ignore empty input
 
             default:
               term.clear(); // Clear before showing error
               writeTopBar();
               term.writeln(`❓ Unknown command: '${cmd}'`);
+              term.write("> "); // Add prompt
           }
 
-          // Only show prompt if game is not active or just ended
-          if (
-            !gameActive ||
-            [
-              "start",
-              "rules",
-              "stats",
-              "history",
-              "reset stats",
-              "clear",
-              "",
-            ].includes(cmd) ||
-            cmd.startsWith("?")
-          ) {
-            term.write("\r\n> "); // show prompt
-          }
+          // // Only show prompt if game is not active or just ended - REMOVED logic, handled in cases now
+          // if (
+          //   !gameActive ||
+          //   [
+          //     "start",
+          //     "rules",
+          //     "stats",
+          //     "history",
+          //     "reset stats",
+          //     "clear",
+          //     "",
+          //   ].includes(cmd) ||
+          //   cmd.startsWith("?")
+          // ) {
+          //   term.write("\r\n> "); // show prompt
+          // }
         }
 
         // Backspace support
