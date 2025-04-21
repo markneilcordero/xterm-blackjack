@@ -99,6 +99,8 @@
           <div class="text-center btn-custom mt-3">
             <button class="btn btn-success mb-2" id="startBtn">Start Game</button>
             <button class="btn btn-secondary mb-2" id="resetStatsBtn">Reset Stats</button>
+            <button class="btn btn-info mb-2" id="rulesBtn">📖 Rules</button>
+            <button class="btn btn-warning mb-2" id="statsBtn">📊 Stats</button>
           </div>
           <div class="text-center mt-3" id="actionButtons" style="display: none;">
             <button class="btn btn-warning me-2" id="hitBtn">Hit</button>
@@ -199,6 +201,15 @@
       // Add Restart Button Event Listener
       $("#restartBtn").on("click", () => {
         startGame();
+      });
+
+      // Add Rules and Stats Button Event Listeners
+      $("#rulesBtn").on("click", () => {
+        term._core._onData.fire("rules\r");
+      });
+
+      $("#statsBtn").on("click", () => {
+        term._core._onData.fire("stats\r");
       });
 
       // Deck & Card Logic
