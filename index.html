@@ -299,11 +299,13 @@
       // Helper function to simulate typing into the terminal
       function simulateTerminalInput(command) {
         for (let i = 0; i < command.length; i++) {
-          term.write(command[i]);
-          term.onData.fire(command[i]); // simulate each keypress
+          const char = command[i];
+          commandBuffer += char;     // fill the command buffer manually
+          term.write(char);          // show on terminal
         }
-        term.write("\\r");
-        term.onData.fire("\\r"); // simulate Enter key
+
+        term.write("\r");            // show new line on terminal
+        term.onData.fire("\r");           // trigger Enter key properly
       }
 
       // Game Actions
