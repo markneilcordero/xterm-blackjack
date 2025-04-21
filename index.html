@@ -265,58 +265,90 @@
     }
 
     // Command Parser
-    term.onData(e => {
-      const cmd = e.trim().toLowerCase();
+    let commandBuffer = '';
 
-      switch (cmd) {
-        case 'start':
-          startGame();
-          break;
-        case 'hit':
-          playerHits();
-          break;
-        case 'stand':
-          playerStands();
-          break;
-        case 'rules':
-          term.writeln("📖 Blackjack Rules:");
-          term.writeln("1. Get as close to 21 without going over.");
-          term.writeln("2. Face cards = 10. Aces = 1 or 11.");
-          term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
-          term.writeln("4. Dealer hits until 17+. Highest hand wins.");
-          break;
-        case 'stats':
-          const s = loadStats();
-          term.writeln(`📊 Stats:
+    term.onData((key) => {
+      // If Enter key is pressed
+      if (key === '\r') {
+        const cmd = commandBuffer.trim().toLowerCase();
+        commandBuffer = ''; // reset buffer
+        term.writeln("");   // move to new line
+
+        // Execute command
+        switch (cmd) {
+          case 'start':
+            startGame();
+            break;
+          case 'hit':
+            playerHits();
+            break;
+          case 'stand':
+            playerStands();
+            break;
+          case 'rules':
+            term.writeln("📖 Blackjack Rules:");
+            term.writeln("1. Get as close to 21 without going over.");
+            term.writeln("2. Face cards = 10. Aces = 1 or 11.");
+            term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
+            term.writeln("4. Dealer hits until 17+. Highest hand wins.");
+            break;
+          case 'stats':
+            const s = loadStats();
+            term.writeln(`📊 Stats:
 Games Played: ${s.totalGames}
 Wins: ${s.wins}
 Losses: ${s.losses}
 Draws: ${s.draws}
 Blackjacks: ${s.blackjacks}
 Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
-          break;
-        case 'history':
-          const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
-          if (history.length === 0) {
-            term.writeln("📭 No game history yet.");
-          } else {
-            term.writeln("🕓 Last 5 games:");
-            history.forEach((h, i) => {
-              term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
-            });
-          }
-          break;
-        case 'reset stats':
-          resetStats();
-          term.writeln("🔄 Stats and history reset.");
-          break;
-        case 'clear':
-          term.clear();
-          break;
-        default:
-          term.writeln(`❓ Unknown command: '${cmd}'`);
+            break;
+          case 'history':
+            const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
+            if (history.length === 0) {
+              term.writeln("📭 No game history yet.");
+            } else {
+              term.writeln("🕓 Last 5 games:");
+              history.forEach((h, i) => {
+                term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
+              });
+            }
+            break;
+          case 'reset stats':
+            resetStats();
+            term.writeln("🔄 Stats and history reset.");
+            break;
+          case 'clear':
+            term.clear();
+            term.writeln("🧼 Terminal cleared.");
+            term.writeln("Type 'start' to play, 'rules' to view how to play.");
+            break;
+          case '':
+            break; // ignore empty input
+          default:
+            term.writeln(`❓ Unknown command: '${cmd}'`);
+        }
+
+        term.write('\r\n> '); // show prompt
+      }
+
+      // Backspace support
+      else if (key === '\u007F') {
+        if (commandBuffer.length > 0) {
+          commandBuffer = commandBuffer.slice(0, -1);
+          term.write('\b \b');
+        }
+      }
+
+      // Regular character
+      else {
+        commandBuffer += key;
+        term.write(key);
       }
     });
+
+    // Add initial prompt
+    term.write('> ');
+
   </script>
 
   <!-- How to Play Modal -->
