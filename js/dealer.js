@@ -1,58 +1,33 @@
-// dealer.js
-import { Deck } from './deck.js';
-import { TerminalManager } from './terminal.js';
+// Dealer Module
 
-export const Dealer = {
-  hand: [],
-
-  resetHand() {
-    this.hand = [];
-  },
-
-  receiveCard(card) {
-    this.hand.push(card);
-  },
-
-  getHandValue() {
-    let total = 0;
-    let aces = 0;
-
-    this.hand.forEach(card => {
-      total += card.value;
-      if (card.rank === 'A') aces++;
-    });
-
-    while (total > 21 && aces > 0) {
-      total -= 10;
-      aces--;
+const Dealer = {
+    hand: [],
+  
+    addCard(card) {
+      this.hand.push(card);
+    },
+  
+    getHand() {
+      return this.hand;
+    },
+  
+    resetHand() {
+      this.hand = [];
+    },
+  
+    getScore() {
+      return calculateScore(this.hand); // from utils.js
+    },
+  
+    displayHand() {
+      return `${formatHand(this.hand)} (${this.getScore()})`; // from utils.js
+    },
+  
+    // Dealer draws until score >= 17
+    playTurn(deck) {
+      while (this.getScore() < 17) {
+        this.addCard(drawCard(deck));
+      }
     }
-
-    return total;
-  },
-
-  showInitialCard() {
-    if (this.hand.length > 0) {
-      return this.hand[0].label;
-    }
-    return '';
-  },
-
-  showFullHand() {
-    return this.hand.map(c => c.label).join(' ');
-  },
-
-  playTurn() {
-    let value = this.getHandValue();
-
-    TerminalManager.write(`Dealer's hand: ${this.showFullHand()} (Total: ${value})`);
-
-    while (value < 17) {
-      const card = Deck.drawCard();
-      this.receiveCard(card);
-      value = this.getHandValue();
-      TerminalManager.write(`Dealer draws: ${card.label} (Total: ${value})`);
-    }
-
-    return value;
-  }
-};
+  };
+  

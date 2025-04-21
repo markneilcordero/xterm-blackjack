@@ -5,37 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blackjack Terminal</title>
 
-  <!-- Bootstrap 5.3.3 CDN -->
+  <!-- Bootstrap CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-  <!-- Xterm.js CDN -->
+  <!-- Xterm.js CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
 
-  <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles/style.css" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-dark text-white">
+<body class="bg-dark text-light">
 
   <div class="container py-5">
-    <h1 class="text-center mb-4">🎰 Blackjack Terminal</h1>
+    <h1 class="text-center mb-4">🃏 Blackjack Terminal</h1>
 
-    <!-- Terminal Container -->
-    <div id="terminal-container" class="rounded border border-secondary shadow" style="height: 400px;"></div>
+    <div id="terminal-container" class="border rounded bg-black" style="height: 400px;"></div>
 
-    <p class="text-center mt-3 text-muted">Type <code>help</code> to view available commands.</p>
+    <p class="text-center mt-4 text-secondary">
+      Type <code>help</code> to see the list of available commands.
+    </p>
   </div>
 
   <!-- jQuery CDN -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  <!-- Bootstrap Bundle JS -->
+  <!-- Bootstrap JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- Xterm.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
 
-  <!-- Your Scripts -->
-  <script type="module" src="js/terminal.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <!-- App Scripts -->
+  <script src="js/terminal.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/deck.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/dealer.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/utils.js"></script>
 </body>
 </html>
