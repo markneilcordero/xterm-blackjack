@@ -89,6 +89,10 @@
             <button class="btn btn-success mb-2" id="startBtn">Start Game</button>
             <button class="btn btn-secondary mb-2" id="resetStatsBtn">Reset Stats</button>
           </div>
+          <div class="text-center mt-3" id="actionButtons" style="display: none;">
+            <button class="btn btn-warning me-2" id="hitBtn">Hit</button>
+            <button class="btn btn-primary" id="standBtn">Stand</button>
+          </div>
         </div>
       </div>
     </div>
@@ -147,6 +151,18 @@
 
       $("#resetStatsBtn").on("click", () => {
         resetStats();
+      });
+
+      $("#hitBtn").on("click", () => {
+        if (gameActive) {
+          playerHits();
+        }
+      });
+
+      $("#standBtn").on("click", () => {
+        if (gameActive) {
+          playerStands();
+        }
       });
 
       // Deck & Card Logic
@@ -242,9 +258,10 @@
         term.writeln(
           "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
         );
-        term.writeln("Type 'hit' or 'stand'.");
+        term.writeln("Type 'hit' or 'stand', or use the buttons."); // Updated instruction
         term.writeln("");
         term.write("> "); // Add prompt
+        $("#actionButtons").show(); // ✅ Show hit/stand buttons
       }
 
       function checkPlayerStatus() {
@@ -275,8 +292,10 @@
 
         // Only ask again if not busted or blackjack
         if (gameActive) {
-          term.writeln("Type 'hit' or 'stand'.");
+          term.writeln("Type 'hit' or 'stand', or use the buttons."); // Updated instruction
           term.write("> "); // Add prompt
+        } else {
+          $("#actionButtons").hide(); // Hide buttons if game ended (bust)
         }
       }
 
@@ -331,6 +350,7 @@
 
       function endGame(result) {
         gameActive = false;
+        $("#actionButtons").hide(); // ✅ Hide hit/stand buttons
         const stats = loadStats();
         stats.totalGames++;
 
