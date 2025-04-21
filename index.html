@@ -486,17 +486,20 @@
         });
 
         // Add click events for Yes/No buttons
+        // ✅ Simulate "yes" or "no" response using the buffer + trigger Enter manually
         $("#yesBtn").on("click", () => {
           if (!confirmingBet) return;
-          term.writeln("yes");
-          term.onData("\\r"); // simulate Enter key to confirm
+          betInputBuffer = "yes";
+          term.writeln("yes"); // echo it on terminal
+          term.write("\\r");     // trigger Enter key
           $("#confirmBetButtons").hide();
         });
 
         $("#noBtn").on("click", () => {
           if (!confirmingBet) return;
-          term.writeln("no");
-          term.onData("\\r"); // simulate Enter key to cancel
+          betInputBuffer = "no";
+          term.writeln("no");  // echo it on terminal
+          term.write("\\r");     // trigger Enter key
           $("#confirmBetButtons").hide();
         });
       });
