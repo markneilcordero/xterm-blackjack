@@ -28,13 +28,32 @@
         border-radius: 8px;
         padding: 1rem;
         box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-        height: 500px;
-        overflow: hidden;
+        min-height: 500px; /* minimum height */
+        height: auto; /* auto-expand */
+        max-height: none; /* remove scroll constraint */
+        overflow: visible; /* disable scrollbars */
       }
 
       #terminal {
-        height: 100%;
         width: 100%;
+        height: auto;
+      }
+
+      .terminal-wrapper {
+        overflow-y: hidden; /* disables vertical scrollbar */
+      }
+
+      .terminal-wrapper::-webkit-scrollbar {
+        display: none;
+      }
+      .xterm-viewport::-webkit-scrollbar {
+        width: 0 !important;
+        display: none;
+      }
+
+      .xterm-viewport {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
       }
 
       .btn-custom {
