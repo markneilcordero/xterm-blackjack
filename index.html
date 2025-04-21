@@ -205,11 +205,11 @@
 
       // Add Rules and Stats Button Event Listeners
       $("#rulesBtn").on("click", () => {
-        term._core._onData.fire("rules\r");
+        simulateTerminalInput("rules");
       });
 
       $("#statsBtn").on("click", () => {
-        term._core._onData.fire("stats\r");
+        simulateTerminalInput("stats");
       });
 
       // Deck & Card Logic
@@ -294,6 +294,16 @@
         term.writeln(`📝 Confirm your bet of $${currentBet}? (yes/no)`); // Use currentBet here
         term.write("> ");
         $("#confirmBetButtons").show(); // Show confirmation buttons
+      }
+
+      // Helper function to simulate typing into the terminal
+      function simulateTerminalInput(command) {
+        for (let i = 0; i < command.length; i++) {
+          term.write(command[i]);
+          term.onData.fire(command[i]); // simulate each keypress
+        }
+        term.write("\\r");
+        term.onData.fire("\\r"); // simulate Enter key
       }
 
       // Game Actions
