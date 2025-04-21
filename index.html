@@ -265,65 +265,56 @@
     }
 
     // Command Parser
-    let currentLine = "";
     term.onData(e => {
-      if (e === '\r') { // Enter key
-        term.writeln(''); // Move to the next line in terminal
-        const cmd = currentLine.trim().toLowerCase();
-        currentLine = ""; // Reset buffer
+      const cmd = e.trim().toLowerCase();
 
-        switch (cmd) {
-          case 'start':
-            startGame();
-            break;
-          case 'hit':
-            playerHits();
-            break;
-          case 'stand':
-            playerStands();
-            break;
-          case 'rules':
-            term.writeln("🎲 Rules: Try to get 21 without going over. Face cards = 10. Aces = 1 or 11. Dealer hits until 17.");
-            break;
-          case 'stats':
-            const s = loadStats();
-            term.writeln(`📊 Stats:\n  Games Played: ${s.totalGames}\n  Wins: ${s.wins}\n  Losses: ${s.losses}\n  Draws: ${s.draws}\n  Blackjacks: ${s.blackjacks}\n  Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
-            break;
-          case 'restart':
-            startGame();
-            break;
-          case 'history':
-            const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
-            if (history.length === 0) {
-              term.writeln("📭 No game history yet.");
-            } else {
-              term.writeln("🕓 Last 5 games:");
-              history.forEach((h, i) => {
-                term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
-              });
-            }
-            break;
-          case 'reset stats':
-            resetStats();
-            localStorage.removeItem("blackjack_history");
-            term.writeln("🔄 Stats and history reset.");
-            break;
-          case 'help': // Added help command
-             term.writeln("Available commands: start, hit, stand, rules, stats, restart, history, reset stats, help");
-             break;
-          default:
-            if (cmd) { // Only show error if command is not empty
-              term.writeln(`❓ Unknown command: ${cmd}. Type 'help' for commands.`);
-            }
-        }
-      } else if (e === '\x7F' || e === '\b') { // Backspace
-        if (currentLine.length > 0) {
-          term.write('\b \b'); // Move cursor back, write space, move back again
-          currentLine = currentLine.slice(0, -1);
-        }
-      } else if (e >= ' ' && e <= '~') { // Printable characters
-        currentLine += e;
-        term.write(e); // Echo character back to terminal
+      switch (cmd) {
+        case 'start':
+          startGame();
+          break;
+        case 'hit':
+          playerHits();
+          break;
+        case 'stand':
+          playerStands();
+          break;
+        case 'rules':
+          term.writeln("📖 Blackjack Rules:");
+          term.writeln("1. Get as close to 21 without going over.");
+          term.writeln("2. Face cards = 10. Aces = 1 or 11.");
+          term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
+          term.writeln("4. Dealer hits until 17+. Highest hand wins.");
+          break;
+        case 'stats':
+          const s = loadStats();
+          term.writeln(`📊 Stats:
+Games Played: ${s.totalGames}
+Wins: ${s.wins}
+Losses: ${s.losses}
+Draws: ${s.draws}
+Blackjacks: ${s.blackjacks}
+Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
+          break;
+        case 'history':
+          const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
+          if (history.length === 0) {
+            term.writeln("📭 No game history yet.");
+          } else {
+            term.writeln("🕓 Last 5 games:");
+            history.forEach((h, i) => {
+              term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
+            });
+          }
+          break;
+        case 'reset stats':
+          resetStats();
+          term.writeln("🔄 Stats and history reset.");
+          break;
+        case 'clear':
+          term.clear();
+          break;
+        default:
+          term.writeln(`❓ Unknown command: '${cmd}'`);
       }
     });
   </script>
