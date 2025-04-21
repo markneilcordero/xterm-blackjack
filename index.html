@@ -108,6 +108,13 @@
           <div class="text-center mt-3" id="restartButton" style="display: none;">
             <button class="btn btn-danger animate__animated" id="restartBtn">🔁 Restart Game</button>
           </div>
+          <!-- Pre-set Bet Buttons -->
+          <div class="text-center mt-3" id="betButtons" style="display: none;">
+            <button class="btn btn-outline-light me-2 bet-btn" data-amount="50">$50</button>
+            <button class="btn btn-outline-light me-2 bet-btn" data-amount="100">$100</button>
+            <button class="btn btn-outline-light me-2 bet-btn" data-amount="500">$500</button>
+            <button class="btn btn-outline-warning bet-btn" data-amount="all">All In</button>
+          </div>
         </div>
       </div>
     </div>
@@ -214,6 +221,7 @@
       let currentBet = 0; // Global variable for the current bet
       let awaitingBet = false; // Flag for bet input mode
       let betInputBuffer = ""; // Buffer for bet input
+      let confirmingBet = false; // Flag for bet confirmation step
 
       function createDeck() {
         deck = [];
@@ -264,6 +272,13 @@
         return hand.map((c) => `[${c.value}${c.suit}]`).join(" ");
       }
 
+      // Helper function for bet confirmation
+      function confirmBet() {
+        confirmingBet = true;
+        term.writeln(`📝 Confirm your bet of $${currentBet}? (yes/no)`); // Use currentBet here
+        term.write("> ");
+      }
+
       // Game Actions
       function startGame() {
         term.clear(); // 🧼 Clear screen before new game
@@ -281,9 +296,12 @@
         // Ask for bet via terminal
         awaitingBet = true;
         betInputBuffer = "";
-        term.writeln(`💵 You have $${stats.balance}. Enter your bet:`);
+        confirmingBet = false; // Reset confirmation flag
+        term.writeln(`💵 You have $${stats.balance}. Enter your bet amount (or click a button):`);
         term.write("> ");
-        // Removed prompt logic and game start logic from here
+        $("#betButtons").show(); // Show bet buttons
+        $("#actionButtons").hide(); // Ensure action buttons are hidden
+        $("#restartButton").hide(); // Ensure restart button is hidden
       }
 
       function checkPlayerStatus() {
@@ -428,13 +446,111 @@
       // Command Parser
       let commandBuffer = "";
 
+      // Add event listener for pre-set bet buttons
+      $(document).ready(function() {
+        $(".bet-btn").on("click", function () {
+          if (!awaitingBet || confirmingBet) return; // Don't allow clicking during confirmation
+
+          const stats = loadStats();
+          const val = $(this).data("amount");
+          let bet = 0;
+
+          if (val === "all") {
+            bet = stats.balance;
+          } else {
+            bet = parseInt(val);
+          }
+
+          if (bet <= 0) {
+             term.writeln(`❌ Cannot bet $0.`);
+             term.write("> ");
+             return;
+          }
+
+          if (bet > stats.balance) {
+            term.writeln(`❌ You only have $${stats.balance}.`);
+            term.write("> ");
+            return;
+          }
+
+          currentBet = bet; // Set currentBet directly
+          betInputBuffer = ""; // Clear buffer as we are confirming now
+          term.writeln(bet.toString()); // Echo the chosen amount to terminal
+          confirmBet(); // trigger confirmation
+        });
+      });
+
       term.onData((key) => {
         // Handle bet input if awaiting
         if (awaitingBet) {
-          if (key === "\r") { // Enter key
+          // ENTER key
+          if (key === "\r") {
             term.writeln(""); // new line after input
+
+            const input = betInputBuffer.trim().toLowerCase();
             const stats = loadStats();
-            const bet = parseInt(betInputBuffer.trim());
+
+            // Handle Confirmation Step
+            if (confirmingBet) {
+              if (input === "yes" || input === "y") {
+                // Bet confirmed, currentBet is already set
+                const bet = parseInt(currentBet);
+
+                // Check balance again just in case (though unlikely to change)
+                if (bet > stats.balance) {
+                    term.writeln(`❌ Insufficient funds. You only have $${stats.balance}.`);
+                    term.writeln("Enter new amount:");
+                    betInputBuffer = "";
+                    confirmingBet = false;
+                    term.write("> ");
+                    return;
+                }
+
+                stats.balance -= bet;
+                saveStats(stats);
+
+                term.writeln(`💰 Bet confirmed: $${bet}. Remaining: $${stats.balance}`);
+                confirmingBet = false;
+                awaitingBet = false;
+                betInputBuffer = "";
+
+                // --- Start the actual game --- 
+                createDeck();
+                shuffleDeck();
+
+                playerHand = [drawCard(), drawCard()];
+                dealerHand = [drawCard(), drawCard()];
+                gameActive = true;
+
+                term.writeln("🎮 Game Started!");
+                term.writeln(
+                  "👤 Your Hand: " +
+                    renderHand(playerHand) +
+                    ` (Total: ${calculateHandValue(playerHand)})`
+                );
+                term.writeln(
+                  "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
+                );
+                term.writeln("Type 'hit' or 'stand', or use the buttons.");
+                term.writeln("");
+                term.write("> "); // Add prompt
+                $("#actionButtons").show(); // Show hit/stand buttons
+                $("#restartButton").hide(); // Hide restart button
+                $("#betButtons").hide(); // Hide bet buttons
+                return; // Bet processed, game started
+
+              } else { // Confirmation denied (no/n or anything else)
+                term.writeln("❌ Bet cancelled. Enter new amount (or click a button):");
+                betInputBuffer = "";
+                currentBet = 0; // Reset current bet
+                confirmingBet = false;
+                term.write("> ");
+                return;
+              }
+            }
+
+            // --- Handle Manual Bet Input (Not confirming yet) ---
+            const bet = parseInt(input);
 
             if (!bet || isNaN(bet) || bet <= 0 || bet > stats.balance) {
               term.writeln(`❌ Invalid bet. Must be 1 to $${stats.balance}`);
@@ -443,40 +559,14 @@
               return; // Stop processing, wait for new bet input
             }
 
-            // Valid bet received
+            // Valid manual bet received, proceed to confirmation
             currentBet = bet;
-            stats.balance -= currentBet;
-            saveStats(stats);
-            term.writeln(`💰 You bet $${currentBet}. Remaining: $${stats.balance}`);
-            awaitingBet = false; // Exit bet input mode
-            betInputBuffer = ""; // Clear buffer
-
-            // --- Continue starting the game ---
-            createDeck();
-            shuffleDeck();
-
-            playerHand = [drawCard(), drawCard()];
-            dealerHand = [drawCard(), drawCard()];
-            gameActive = true;
-
-            term.writeln("🎮 Game Started!");
-            term.writeln(
-              "👤 Your Hand: " +
-                renderHand(playerHand) +
-                ` (Total: ${calculateHandValue(playerHand)})`
-            );
-            term.writeln(
-              "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
-            );
-            term.writeln("Type 'hit' or 'stand', or use the buttons."); // Updated instruction
-            term.writeln("");
-            term.write("> "); // Add prompt
-            $("#actionButtons").show(); // ✅ Show hit/stand buttons
-            $("#restartButton").hide(); // Hide restart button if visible
-            return; // Bet processed, game started, stop further processing in onData
+            confirmBet();
+            betInputBuffer = ""; // Clear buffer for yes/no input
+            return;
           }
 
-          // Handle Backspace for bet input
+          // Handle Backspace for bet input (manual or confirmation)
           if (key === "\u007F") {
             if (betInputBuffer.length > 0) {
               betInputBuffer = betInputBuffer.slice(0, -1);
@@ -485,13 +575,22 @@
             return; // Stop processing other keys
           }
 
-          // Add typed character (only if it's a digit for bet)
-          if (key >= '0' && key <= '9') { // Allow only digits for bet
-             betInputBuffer += key;
-             term.write(key);
+          // Add typed character (allow digits for manual bet, letters for confirmation)
+          if (confirmingBet) {
+             // Allow only letters for yes/no confirmation
+             if (/^[a-zA-Z]$/.test(key)) {
+                 betInputBuffer += key;
+                 term.write(key);
+             }
+          } else {
+             // Allow only digits for manual bet input
+             if (/^[0-9]$/.test(key)) {
+                 betInputBuffer += key;
+                 term.write(key);
+             }
           }
-          // Ignore non-digit characters during bet input
-          return; // Stop processing other keys/commands while awaiting bet
+          // Ignore other characters
+          return; // Stop processing other keys/commands while awaiting bet/confirmation
         }
 
         // --- Regular command processing (if not awaiting bet) ---
