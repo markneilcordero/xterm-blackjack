@@ -74,6 +74,17 @@
           width: 100%;
         }
       }
+
+      /* Add Pulse Animation */
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      #hitBtn, #standBtn {
+        animation: pulse 1.5s infinite ease-in-out;
+      }
     </style>
   </head>
   <body>
@@ -92,6 +103,10 @@
           <div class="text-center mt-3" id="actionButtons" style="display: none;">
             <button class="btn btn-warning me-2" id="hitBtn">Hit</button>
             <button class="btn btn-primary" id="standBtn">Stand</button>
+          </div>
+          <!-- Add Restart Button -->
+          <div class="text-center mt-3" id="restartButton" style="display: none;">
+            <button class="btn btn-danger animate__animated" id="restartBtn">🔁 Restart Game</button>
           </div>
         </div>
       </div>
@@ -163,6 +178,11 @@
         if (gameActive) {
           playerStands();
         }
+      });
+
+      // Add Restart Button Event Listener
+      $("#restartBtn").on("click", () => {
+        startGame();
       });
 
       // Deck & Card Logic
@@ -262,6 +282,7 @@
         term.writeln("");
         term.write("> "); // Add prompt
         $("#actionButtons").show(); // ✅ Show hit/stand buttons
+        $("#restartButton").hide(); // Hide restart button if visible
       }
 
       function checkPlayerStatus() {
@@ -351,6 +372,7 @@
       function endGame(result) {
         gameActive = false;
         $("#actionButtons").hide(); // ✅ Hide hit/stand buttons
+        $("#restartButton").show(); // Show restart button
         const stats = loadStats();
         stats.totalGames++;
 
