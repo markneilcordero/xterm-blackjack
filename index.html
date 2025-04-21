@@ -143,11 +143,15 @@
         losses: 0,
         draws: 0,
         blackjacks: 0,
+        balance: 1000, // 💵 Starting balance
       };
 
       const loadStats = () => {
         const saved = localStorage.getItem("blackjack_stats");
-        return saved ? JSON.parse(saved) : { ...defaultStats };
+        const stats = saved ? JSON.parse(saved) : { ...defaultStats };
+        // Ensure balance is initialized
+        if (stats.balance === undefined) stats.balance = 1000;
+        return stats;
       };
 
       const saveStats = (stats) => {
@@ -156,7 +160,7 @@
 
       const resetStats = () => {
         localStorage.removeItem("blackjack_stats");
-        term.writeln("📉 Stats have been reset.");
+        term.writeln("📉 Stats and balance have been reset."); // Updated message
       };
 
       // Button Events
@@ -207,6 +211,7 @@
       let playerHand = [];
       let dealerHand = [];
       let gameActive = false;
+      let currentBet = 0; // Global variable for the current bet
 
       function createDeck() {
         deck = [];
@@ -261,6 +266,32 @@
       function startGame() {
         term.clear(); // 🧼 Clear screen before new game
         writeTopBar();
+
+        const stats = loadStats(); // Load stats to check balance
+
+        // Check if player has enough balance to play
+        if (stats.balance <= 0) {
+          term.writeln("💸 You're out of money! Reset stats to play again.");
+          term.write("> ");
+          return;
+        }
+
+        // Ask for bet
+        const betInput = prompt(`You have $${stats.balance}. Enter your bet:`);
+        const bet = parseInt(betInput);
+
+        if (!betInput || isNaN(bet) || bet <= 0 || bet > stats.balance) {
+          term.writeln("❌ Invalid bet amount. Please enter a valid number up to your balance.");
+          term.writeln("Type 'start' to try again.");
+          term.write("> ");
+          return; // Stop game start if bet is invalid
+        }
+
+        currentBet = bet; // Store the valid bet
+        stats.balance -= currentBet; // Deduct bet from balance
+        saveStats(stats); // Save the updated balance
+
+        term.writeln(`💰 You bet $${currentBet}. Current balance: $${stats.balance}`);
 
         createDeck();
         shuffleDeck();
@@ -373,14 +404,33 @@
         gameActive = false;
         $("#actionButtons").hide(); // ✅ Hide hit/stand buttons
         $("#restartButton").show(); // Show restart button
-        const stats = loadStats();
+        const stats = loadStats(); // Load stats *before* updating
         stats.totalGames++;
 
-        if (result === "win") stats.wins++;
-        if (result === "loss") stats.losses++;
-        if (result === "draw") stats.draws++;
-        if (calculateHandValue(playerHand) === 21 && playerHand.length === 2)
+        const playerValue = calculateHandValue(playerHand);
+        const isBlackjack = playerValue === 21 && playerHand.length === 2;
+
+        if (result === "win") {
+          stats.wins++;
+          stats.balance += currentBet * 2; // Win double the bet
+          term.writeln(`💰 You won $${currentBet * 2}!`);
+        } else if (result === "loss") {
+          stats.losses++;
+          // Bet was already deducted at the start
+          term.writeln(`💸 You lost $${currentBet}.`);
+        } else if (result === "draw") {
+          stats.draws++;
+          stats.balance += currentBet; // Refund the bet
+          term.writeln(`💰 Bet refunded ($${currentBet}).`);
+        }
+
+        // Bonus for Blackjack
+        if (isBlackjack) {
           stats.blackjacks++;
+          const bonus = Math.floor(currentBet * 0.5); // +50% bonus for Blackjack
+          stats.balance += bonus;
+          term.writeln(`🎉 Blackjack bonus: +$${bonus}!`);
+        }
 
         // Update history
         const history =
@@ -389,13 +439,16 @@
           result,
           player: calculateHandValue(playerHand),
           dealer: calculateHandValue(dealerHand),
+          bet: currentBet, // Store bet in history
+          payout: result === 'win' ? currentBet * 2 + (isBlackjack ? Math.floor(currentBet * 0.5) : 0) : (result === 'draw' ? currentBet : 0), // Store payout
           timestamp: new Date().toLocaleString(),
         });
         if (history.length > 5) history.pop();
         localStorage.setItem("blackjack_history", JSON.stringify(history));
 
-        saveStats(stats);
+        saveStats(stats); // Save stats *after* calculating payouts and bonus
 
+        term.writeln(`\n📊 Current Balance: $${stats.balance}`); // Show balance after game
         term.writeln("\n🎲 Game Over.");
         term.writeln("📊 Type 'stats' to view performance.");
         term.writeln("🔁 Type 'start' to play again.");
@@ -459,6 +512,7 @@
               term.writeln(`  Losses       : ${s.losses}`);
               term.writeln(`  Draws        : ${s.draws}`);
               term.writeln(`  Blackjacks   : ${s.blackjacks}`);
+              term.writeln(`  Balance      : $${s.balance}`); // Display balance
               term.writeln(
                 `  Win Rate     : ${
                   s.totalGames > 0
@@ -493,7 +547,7 @@
             case "reset stats":
               term.clear();
               writeTopBar();
-              resetStats(); // resetStats already prints a message
+              resetStats(); // resetStats already prints the updated message
               term.write("> "); // Add prompt
               break;
 
