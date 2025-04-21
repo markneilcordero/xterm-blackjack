@@ -247,6 +247,18 @@
       if (result === 'draw') stats.draws++;
       if (calculateHandValue(playerHand) === 21 && playerHand.length === 2) stats.blackjacks++;
 
+      // Add history log
+      const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
+      const gameSummary = {
+        result,
+        player: calculateHandValue(playerHand),
+        dealer: calculateHandValue(dealerHand),
+        timestamp: new Date().toLocaleString()
+      };
+      history.unshift(gameSummary); // add to top
+      if (history.length > 5) history.pop(); // keep only 5 recent games
+      localStorage.setItem("blackjack_history", JSON.stringify(history));
+
       saveStats(stats);
       term.writeln("Type 'start' to play again.");
     }
@@ -268,13 +280,56 @@
         case 'rules':
           term.writeln("🎲 Rules: Try to get 21 without going over. Face cards = 10. Aces = 1 or 11. Dealer hits until 17.");
           break;
+        case 'stats':
+          const s = loadStats();
+          term.writeln(`📊 Stats:\n  Games Played: ${s.totalGames}\n  Wins: ${s.wins}\n  Losses: ${s.losses}\n  Draws: ${s.draws}\n  Blackjacks: ${s.blackjacks}\n  Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
+          break;
         case 'restart':
           startGame();
+          break;
+        case 'history':
+          const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
+          if (history.length === 0) {
+            term.writeln("📭 No game history yet.");
+          } else {
+            term.writeln("🕓 Last 5 games:");
+            history.forEach((h, i) => {
+              term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
+            });
+          }
+          break;
+        case 'reset stats':
+          resetStats();
+          localStorage.removeItem("blackjack_history");
+          term.writeln("🔄 Stats and history reset.");
           break;
         default:
           term.writeln(`❓ Unknown command: ${cmd}`);
       }
     });
   </script>
+
+  <!-- How to Play Modal -->
+  <div class="modal fade" id="howToPlayModal" tabindex="-1" aria-labelledby="howToPlayLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content text-dark">
+        <div class="modal-header">
+          <h5 class="modal-title" id="howToPlayLabel">How to Play Blackjack</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>🎯 The goal is to get as close to 21 without going over.</p>
+          <ul>
+            <li>Face cards = 10</li>
+            <li>Ace = 1 or 11</li>
+            <li>Type <code>hit</code> to draw a card</li>
+            <li>Type <code>stand</code> to end your turn</li>
+            <li>Dealer hits until 17+</li>
+          </ul>
+          <p>💥 Bust = total over 21. Highest hand wins!</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
