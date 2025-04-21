@@ -66,6 +66,19 @@
   <script>
     const term = new Terminal();
     term.open(document.getElementById('terminal'));
+    
+    term.clear();
+    writeTopBar();
+    term.writeln("Type 'start' to begin or 'rules' for help.\n");
+    term.write('> ');
+
+
+    function writeTopBar() {
+      term.writeln("====================================");
+      term.writeln("🎴 BLACKJACK TERMINAL – Human vs AI");
+      term.writeln("====================================\n");
+    }
+
     term.writeln("Welcome to Blackjack Terminal Game!");
     term.writeln("Type 'start' to begin or 'help' for commands.");
 
@@ -161,6 +174,9 @@
 
     // Game Actions
     function startGame() {
+      term.clear(); // 🧼 Clear screen before new game
+      writeTopBar();
+
       createDeck();
       shuffleDeck();
 
@@ -168,7 +184,7 @@
       dealerHand = [drawCard(), drawCard()];
       gameActive = true;
 
-      term.writeln("\n🎮 New Game Started!");
+      term.writeln("🎮 New Game Started!");
       term.writeln("👤 Your Hand: " + renderHand(playerHand) + ` (Total: ${calculateHandValue(playerHand)})`);
       term.writeln("🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`);
       term.writeln("Type 'hit' or 'stand'.");
@@ -272,27 +288,39 @@
       if (key === '\r') {
         const cmd = commandBuffer.trim().toLowerCase();
         commandBuffer = ''; // reset buffer
-        term.writeln("");   // move to new line
+        // term.writeln("");   // move to new line - Removed, clear handles this
 
         // Execute command
         switch (cmd) {
           case 'start':
+            term.clear(); // Clear before new game
+            writeTopBar();
             startGame();
             break;
+
           case 'hit':
+            // term.clear(); // Clear before showing new hand - Removed, let hit logic handle output
             playerHits();
             break;
+
           case 'stand':
+            // term.clear(); // Clear before showing dealer logic - Removed, let stand logic handle output
             playerStands();
             break;
+
           case 'rules':
+            term.clear(); // Clear before showing rules
+            writeTopBar();
             term.writeln("📖 Blackjack Rules:");
             term.writeln("1. Get as close to 21 without going over.");
             term.writeln("2. Face cards = 10. Aces = 1 or 11.");
             term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
             term.writeln("4. Dealer hits until 17+. Highest hand wins.");
             break;
+
           case 'stats':
+            term.clear(); // Clean view for stats
+            writeTopBar();
             const s = loadStats();
             term.writeln(`📊 Stats:
 Games Played: ${s.totalGames}
@@ -302,7 +330,10 @@ Draws: ${s.draws}
 Blackjacks: ${s.blackjacks}
 Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
             break;
+
           case 'history':
+            term.clear(); // Clean view for history
+            writeTopBar();
             const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
             if (history.length === 0) {
               term.writeln("📭 No game history yet.");
@@ -313,22 +344,35 @@ Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`
               });
             }
             break;
+
           case 'reset stats':
-            resetStats();
-            term.writeln("🔄 Stats and history reset.");
+            term.clear();
+            writeTopBar();
+            resetStats(); // resetStats already prints a message
+            // term.writeln("🔄 Stats and history reset."); // Removed duplicate message
             break;
+
           case 'clear':
             term.clear();
+            writeTopBar();
             term.writeln("🧼 Terminal cleared.");
             term.writeln("Type 'start' to play, 'rules' to view how to play.");
             break;
+
           case '':
             break; // ignore empty input
+
           default:
+            term.clear(); // Clear before showing error
+            writeTopBar();
             term.writeln(`❓ Unknown command: '${cmd}'`);
         }
 
-        term.write('\r\n> '); // show prompt
+        // Only show prompt if game is not active or just ended
+        if (!gameActive || ['start', 'rules', 'stats', 'history', 'reset stats', 'clear', '' ].includes(cmd) || cmd.startsWith('?')) {
+             term.write('\r\n> '); // show prompt
+        }
+
       }
 
       // Backspace support
