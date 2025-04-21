@@ -212,6 +212,8 @@
       let dealerHand = [];
       let gameActive = false;
       let currentBet = 0; // Global variable for the current bet
+      let awaitingBet = false; // Flag for bet input mode
+      let betInputBuffer = ""; // Buffer for bet input
 
       function createDeck() {
         deck = [];
@@ -276,44 +278,12 @@
           return;
         }
 
-        // Ask for bet
-        const betInput = prompt(`You have $${stats.balance}. Enter your bet:`);
-        const bet = parseInt(betInput);
-
-        if (!betInput || isNaN(bet) || bet <= 0 || bet > stats.balance) {
-          term.writeln("❌ Invalid bet amount. Please enter a valid number up to your balance.");
-          term.writeln("Type 'start' to try again.");
-          term.write("> ");
-          return; // Stop game start if bet is invalid
-        }
-
-        currentBet = bet; // Store the valid bet
-        stats.balance -= currentBet; // Deduct bet from balance
-        saveStats(stats); // Save the updated balance
-
-        term.writeln(`💰 You bet $${currentBet}. Current balance: $${stats.balance}`);
-
-        createDeck();
-        shuffleDeck();
-
-        playerHand = [drawCard(), drawCard()];
-        dealerHand = [drawCard(), drawCard()];
-        gameActive = true;
-
-        term.writeln("🎮 New Game Started!");
-        term.writeln(
-          "👤 Your Hand: " +
-            renderHand(playerHand) +
-            ` (Total: ${calculateHandValue(playerHand)})`
-        );
-        term.writeln(
-          "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
-        );
-        term.writeln("Type 'hit' or 'stand', or use the buttons."); // Updated instruction
-        term.writeln("");
-        term.write("> "); // Add prompt
-        $("#actionButtons").show(); // ✅ Show hit/stand buttons
-        $("#restartButton").hide(); // Hide restart button if visible
+        // Ask for bet via terminal
+        awaitingBet = true;
+        betInputBuffer = "";
+        term.writeln(`💵 You have $${stats.balance}. Enter your bet:`);
+        term.write("> ");
+        // Removed prompt logic and game start logic from here
       }
 
       function checkPlayerStatus() {
@@ -459,6 +429,73 @@
       let commandBuffer = "";
 
       term.onData((key) => {
+        // Handle bet input if awaiting
+        if (awaitingBet) {
+          if (key === "\r") { // Enter key
+            term.writeln(""); // new line after input
+            const stats = loadStats();
+            const bet = parseInt(betInputBuffer.trim());
+
+            if (!bet || isNaN(bet) || bet <= 0 || bet > stats.balance) {
+              term.writeln(`❌ Invalid bet. Must be 1 to $${stats.balance}`);
+              term.write("> ");
+              betInputBuffer = ""; // Reset buffer for next attempt
+              return; // Stop processing, wait for new bet input
+            }
+
+            // Valid bet received
+            currentBet = bet;
+            stats.balance -= currentBet;
+            saveStats(stats);
+            term.writeln(`💰 You bet $${currentBet}. Remaining: $${stats.balance}`);
+            awaitingBet = false; // Exit bet input mode
+            betInputBuffer = ""; // Clear buffer
+
+            // --- Continue starting the game ---
+            createDeck();
+            shuffleDeck();
+
+            playerHand = [drawCard(), drawCard()];
+            dealerHand = [drawCard(), drawCard()];
+            gameActive = true;
+
+            term.writeln("🎮 Game Started!");
+            term.writeln(
+              "👤 Your Hand: " +
+                renderHand(playerHand) +
+                ` (Total: ${calculateHandValue(playerHand)})`
+            );
+            term.writeln(
+              "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
+            );
+            term.writeln("Type 'hit' or 'stand', or use the buttons."); // Updated instruction
+            term.writeln("");
+            term.write("> "); // Add prompt
+            $("#actionButtons").show(); // ✅ Show hit/stand buttons
+            $("#restartButton").hide(); // Hide restart button if visible
+            return; // Bet processed, game started, stop further processing in onData
+          }
+
+          // Handle Backspace for bet input
+          if (key === "\u007F") {
+            if (betInputBuffer.length > 0) {
+              betInputBuffer = betInputBuffer.slice(0, -1);
+              term.write("\b \b"); // Move cursor back, erase char, move back again
+            }
+            return; // Stop processing other keys
+          }
+
+          // Add typed character (only if it's a digit for bet)
+          if (key >= '0' && key <= '9') { // Allow only digits for bet
+             betInputBuffer += key;
+             term.write(key);
+          }
+          // Ignore non-digit characters during bet input
+          return; // Stop processing other keys/commands while awaiting bet
+        }
+
+        // --- Regular command processing (if not awaiting bet) ---
+
         // If Enter key is pressed
         if (key === "\r") {
           const cmd = commandBuffer.trim().toLowerCase();
