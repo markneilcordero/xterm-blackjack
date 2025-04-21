@@ -1,418 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blackjack Terminal Game</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blackjack Terminal Game</title>
 
-  <!-- Bootstrap 5.3.3 CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5.3.3 CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
 
-  <!-- Xterm.js CSS CDN -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+    <!-- Xterm.js CSS CDN -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+    />
 
-  <style>
-    body {
-      background-color: #111;
-      color: #fff;
-    }
+    <style>
+      body {
+        background-color: #111;
+        color: #fff;
+      }
 
-    .terminal-wrapper {
-      background-color: #000;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-      height: 500px;
-      overflow: hidden;
-    }
+      .terminal-wrapper {
+        background-color: #000;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+        height: 500px;
+        overflow: hidden;
+      }
 
-    #terminal {
-      height: 100%;
-      width: 100%;
-    }
+      #terminal {
+        height: 100%;
+        width: 100%;
+      }
 
-    .btn-custom {
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container py-5">
-    <h1 class="text-center mb-4">🃏 Blackjack Terminal (Human vs AI)</h1>
-    
-    <div class="row justify-content-center">
-      <div class="col-md-10">
-        <div class="terminal-wrapper" id="terminal-container">
-          <div id="terminal"></div>
-        </div>
-        <div class="text-center btn-custom">
-          <button class="btn btn-success" id="startBtn">Start Game</button>
-          <button class="btn btn-secondary" id="resetStatsBtn">Reset Stats</button>
+      .btn-custom {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-5">
+      <h1 class="text-center mb-4">🃏 Blackjack Terminal (Human vs AI)</h1>
+
+      <div class="row justify-content-center">
+        <div class="col-md-10">
+          <div class="terminal-wrapper" id="terminal-container">
+            <div id="terminal"></div>
+          </div>
+          <div class="text-center btn-custom">
+            <button class="btn btn-success" id="startBtn">Start Game</button>
+            <button class="btn btn-secondary" id="resetStatsBtn">
+              Reset Stats
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- jQuery CDN -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Xterm.js JS CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+    <!-- Xterm.js JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
 
-  <!-- Game Logic -->
-  <script>
-    const term = new Terminal();
-    term.open(document.getElementById('terminal'));
+    <!-- Game Logic -->
+    <script>
+      const term = new Terminal();
+      term.open(document.getElementById("terminal"));
 
-
-    function writeTopBar() {
-      term.writeln("====================================");
-      term.writeln("🎴 BLACKJACK TERMINAL – Human vs AI");
-      term.writeln("====================================\n");
-    }
-
-    term.writeln("Welcome to Blackjack Terminal Game!");
-    term.writeln("Type 'start' to begin or 'help' for commands.");
-
-    // LocalStorage boilerplate
-    const defaultStats = {
-      totalGames: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      blackjacks: 0
-    };
-
-    const loadStats = () => {
-      const saved = localStorage.getItem("blackjack_stats");
-      return saved ? JSON.parse(saved) : { ...defaultStats };
-    };
-
-    const saveStats = (stats) => {
-      localStorage.setItem("blackjack_stats", JSON.stringify(stats));
-    };
-
-    const resetStats = () => {
-      localStorage.removeItem("blackjack_stats");
-      term.writeln("📉 Stats have been reset.");
-    };
-
-    // Button Events
-    $("#startBtn").on("click", () => {
-      startGame(); // Call the function to start the game
-    });
-
-    $("#resetStatsBtn").on("click", () => {
-      resetStats();
-    });
-
-    // Deck & Card Logic
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-
-    let deck = [];
-    let playerHand = [];
-    let dealerHand = [];
-    let gameActive = false;
-
-    function createDeck() {
-      deck = [];
-      for (const suit of suits) {
-        for (const value of values) {
-          deck.push({ suit, value });
-        }
-      }
-    }
-
-    function shuffleDeck() {
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-      }
-    }
-
-    function drawCard() {
-      return deck.pop();
-    }
-
-    // Hand Value Logic
-    function calculateHandValue(hand) {
-      let value = 0;
-      let aces = 0;
-
-      for (const card of hand) {
-        if (['J', 'Q', 'K'].includes(card.value)) {
-          value += 10;
-        } else if (card.value === 'A') {
-          value += 11;
-          aces++;
-        } else {
-          value += parseInt(card.value);
-        }
+      function writeTopBar() {
+        term.writeln("");
+        term.writeln("====================================");
+        term.writeln("🎴 BLACKJACK TERMINAL – Human vs AI");
+        term.writeln("====================================\n");
       }
 
-      // Adjust for Aces
-      while (value > 21 && aces > 0) {
-        value -= 10;
-        aces--;
-      }
+      term.writeln("Welcome to Blackjack Terminal Game!");
+      term.writeln("Type 'start' to begin or 'help' for commands.");
 
-      return value;
-    }
+      // LocalStorage boilerplate
+      const defaultStats = {
+        totalGames: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        blackjacks: 0,
+      };
 
-    function renderHand(hand) {
-      return hand.map(c => `[${c.value}${c.suit}]`).join(' ');
-    }
+      const loadStats = () => {
+        const saved = localStorage.getItem("blackjack_stats");
+        return saved ? JSON.parse(saved) : { ...defaultStats };
+      };
 
-    // Game Actions
-    function startGame() {
-      term.clear(); // 🧼 Clear screen before new game
-      writeTopBar();
+      const saveStats = (stats) => {
+        localStorage.setItem("blackjack_stats", JSON.stringify(stats));
+      };
 
-      createDeck();
-      shuffleDeck();
+      const resetStats = () => {
+        localStorage.removeItem("blackjack_stats");
+        term.writeln("📉 Stats have been reset.");
+      };
 
-      playerHand = [drawCard(), drawCard()];
-      dealerHand = [drawCard(), drawCard()];
-      gameActive = true;
-
-      term.writeln("🎮 New Game Started!");
-      term.writeln("👤 Your Hand: " + renderHand(playerHand) + ` (Total: ${calculateHandValue(playerHand)})`);
-      term.writeln("🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`);
-      term.writeln("Type 'hit' or 'stand'.");
-      term.writeln('');
-    }
-
-    function checkPlayerStatus() {
-      const playerTotal = calculateHandValue(playerHand);
-
-      if (playerTotal === 21) {
-        term.writeln("🎉 Blackjack! Let's see what the dealer does...");
-        dealerTurn();
-      } else if (playerTotal > 21) {
-        term.writeln("💥 Bust! You lose.");
-        endGame('loss');
-      }
-    }
-
-    function playerHits() {
-      if (!gameActive) return;
-      playerHand.push(drawCard());
-      const total = calculateHandValue(playerHand);
-      term.writeln("👤 You drew: " + renderHand([playerHand[playerHand.length - 1]]));
-      term.writeln("👤 Your Hand: " + renderHand(playerHand) + ` (Total: ${total})`);
-      term.writeln('');
-      checkPlayerStatus();
-    }
-
-    function playerStands() {
-      if (!gameActive) return;
-      term.writeln("🧠 You stand. Dealer's turn...");
-      term.writeln('');
-      dealerTurn();
-    }
-
-    function dealerTurn() {
-      const reveal = renderHand(dealerHand);
-      let dealerTotal = calculateHandValue(dealerHand);
-
-      term.writeln("🤖 Dealer reveals: " + reveal + ` (Total: ${dealerTotal})`);
-      term.writeln('');
-
-      const interval = setInterval(() => {
-        if (dealerTotal < 17) {
-          const card = drawCard();
-          dealerHand.push(card);
-          dealerTotal = calculateHandValue(dealerHand);
-          term.writeln("🤖 Dealer draws: " + renderHand([card]) + ` → Total: ${dealerTotal}`);
-        } else {
-          clearInterval(interval);
-          determineWinner();
-        }
-      }, 1000);
-    }
-
-    function determineWinner() {
-      const playerTotal = calculateHandValue(playerHand);
-      const dealerTotal = calculateHandValue(dealerHand);
-
-      if (dealerTotal > 21 || playerTotal > dealerTotal) {
-        term.writeln("✅ You win!");
-        endGame('win');
-      } else if (dealerTotal > playerTotal) {
-        term.writeln("❌ Dealer wins!");
-        endGame('loss');
-      } else {
-        term.writeln("🤝 It's a draw.");
-        endGame('draw');
-      }
-    }
-
-    function endGame(result) {
-      gameActive = false;
-      const stats = loadStats();
-      stats.totalGames++;
-
-      if (result === 'win') stats.wins++;
-      if (result === 'loss') stats.losses++;
-      if (result === 'draw') stats.draws++;
-      if (calculateHandValue(playerHand) === 21 && playerHand.length === 2) stats.blackjacks++;
-
-      // Update history
-      const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
-      history.unshift({
-        result,
-        player: calculateHandValue(playerHand),
-        dealer: calculateHandValue(dealerHand),
-        timestamp: new Date().toLocaleString()
+      // Button Events
+      $("#startBtn").on("click", () => {
+        startGame(); // Call the function to start the game
       });
-      if (history.length > 5) history.pop();
-      localStorage.setItem("blackjack_history", JSON.stringify(history));
 
-      saveStats(stats);
+      $("#resetStatsBtn").on("click", () => {
+        resetStats();
+      });
 
-      term.writeln("\n🎲 Game Over.");
-      term.writeln("📊 Type 'stats' to view performance.");
-      term.writeln("🔁 Type 'start' to play again.");
-    }
+      // Deck & Card Logic
+      const suits = ["♠", "♥", "♦", "♣"];
+      const values = [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A",
+      ];
 
-    // Command Parser
-    let commandBuffer = '';
+      let deck = [];
+      let playerHand = [];
+      let dealerHand = [];
+      let gameActive = false;
 
-    term.onData((key) => {
-      // If Enter key is pressed
-      if (key === '\r') {
-        const cmd = commandBuffer.trim().toLowerCase();
-        commandBuffer = ''; // reset buffer
-        // term.writeln("");   // move to new line - Removed, clear handles this
-
-        // Execute command
-        switch (cmd) {
-          case 'start':
-            startGame();
-            break;
-
-          case 'hit':
-            // term.clear(); // Clear before showing new hand - Removed, let hit logic handle output
-            playerHits();
-            break;
-
-          case 'stand':
-            // term.clear(); // Clear before showing dealer logic - Removed, let stand logic handle output
-            playerStands();
-            break;
-
-          case 'rules':
-            term.clear(); // Clear before showing rules
-            writeTopBar();
-            term.writeln("📖 Blackjack Rules:");
-            term.writeln("1. Get as close to 21 without going over.");
-            term.writeln("2. Face cards = 10. Aces = 1 or 11.");
-            term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
-            term.writeln("4. Dealer hits until 17+. Highest hand wins.");
-            break;
-
-          case 'stats':
-            term.clear(); // Clean view for stats
-            writeTopBar();
-            const s = loadStats();
-            term.writeln(`📊 Stats:
-Games Played: ${s.totalGames}
-Wins: ${s.wins}
-Losses: ${s.losses}
-Draws: ${s.draws}
-Blackjacks: ${s.blackjacks}
-Win Rate: ${s.totalGames > 0 ? ((s.wins / s.totalGames) * 100).toFixed(1) : 0}%`);
-            break;
-
-          case 'history':
-            term.clear(); // Clean view for history
-            writeTopBar();
-            const history = JSON.parse(localStorage.getItem("blackjack_history")) || [];
-            if (history.length === 0) {
-              term.writeln("📭 No game history yet.");
-            } else {
-              term.writeln("🕓 Last 5 games:");
-              history.forEach((h, i) => {
-                term.writeln(`${i + 1}. ${h.result.toUpperCase()} | You: ${h.player}, Dealer: ${h.dealer} | ${h.timestamp}`);
-              });
-            }
-            break;
-
-          case 'reset stats':
-            term.clear();
-            writeTopBar();
-            resetStats(); // resetStats already prints a message
-            // term.writeln("🔄 Stats and history reset."); // Removed duplicate message
-            break;
-
-          case 'clear':
-            term.clear();
-            writeTopBar();
-            term.writeln("🧼 Terminal cleared.");
-            term.writeln("Type 'start' to play, 'rules' to view how to play.");
-            break;
-
-          case '':
-            break; // ignore empty input
-
-          default:
-            term.clear(); // Clear before showing error
-            writeTopBar();
-            term.writeln(`❓ Unknown command: '${cmd}'`);
-        }
-
-        // Only show prompt if game is not active or just ended
-        if (!gameActive || ['start', 'rules', 'stats', 'history', 'reset stats', 'clear', '' ].includes(cmd) || cmd.startsWith('?')) {
-             term.write('\r\n> '); // show prompt
-        }
-
-      }
-
-      // Backspace support
-      else if (key === '\u007F') {
-        if (commandBuffer.length > 0) {
-          commandBuffer = commandBuffer.slice(0, -1);
-          term.write('\b \b');
+      function createDeck() {
+        deck = [];
+        for (const suit of suits) {
+          for (const value of values) {
+            deck.push({ suit, value });
+          }
         }
       }
 
-      // Regular character
-      else {
-        commandBuffer += key;
-        term.write(key);
+      function shuffleDeck() {
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
       }
-    });
 
-    // Add initial prompt
-    term.write('> ');
+      function drawCard() {
+        return deck.pop();
+      }
 
-  </script>
+      // Hand Value Logic
+      function calculateHandValue(hand) {
+        let value = 0;
+        let aces = 0;
 
-  <!-- How to Play Modal -->
-  <div class="modal fade" id="howToPlayModal" tabindex="-1" aria-labelledby="howToPlayLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content text-dark">
-        <div class="modal-header">
-          <h5 class="modal-title" id="howToPlayLabel">How to Play Blackjack</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p>🎯 The goal is to get as close to 21 without going over.</p>
-          <ul>
-            <li>Face cards = 10</li>
-            <li>Ace = 1 or 11</li>
-            <li>Type <code>hit</code> to draw a card</li>
-            <li>Type <code>stand</code> to end your turn</li>
-            <li>Dealer hits until 17+</li>
-          </ul>
-          <p>💥 Bust = total over 21. Highest hand wins!</p>
+        for (const card of hand) {
+          if (["J", "Q", "K"].includes(card.value)) {
+            value += 10;
+          } else if (card.value === "A") {
+            value += 11;
+            aces++;
+          } else {
+            value += parseInt(card.value);
+          }
+        }
+
+        // Adjust for Aces
+        while (value > 21 && aces > 0) {
+          value -= 10;
+          aces--;
+        }
+
+        return value;
+      }
+
+      function renderHand(hand) {
+        return hand.map((c) => `[${c.value}${c.suit}]`).join(" ");
+      }
+
+      // Game Actions
+      function startGame() {
+        term.clear(); // 🧼 Clear screen before new game
+        writeTopBar();
+
+        createDeck();
+        shuffleDeck();
+
+        playerHand = [drawCard(), drawCard()];
+        dealerHand = [drawCard(), drawCard()];
+        gameActive = true;
+
+        term.writeln("🎮 New Game Started!");
+        term.writeln(
+          "👤 Your Hand: " +
+            renderHand(playerHand) +
+            ` (Total: ${calculateHandValue(playerHand)})`
+        );
+        term.writeln(
+          "🤖 Dealer Shows: " + `[${dealerHand[0].value}${dealerHand[0].suit}]`
+        );
+        term.writeln("Type 'hit' or 'stand'.");
+        term.writeln("");
+      }
+
+      function checkPlayerStatus() {
+        const playerTotal = calculateHandValue(playerHand);
+
+        if (playerTotal === 21) {
+          term.writeln("🎉 Blackjack! Let's see what the dealer does...");
+          dealerTurn();
+        } else if (playerTotal > 21) {
+          term.writeln("💥 Bust! You lose.");
+          endGame("loss");
+        }
+      }
+
+      function playerHits() {
+        if (!gameActive) return;
+        playerHand.push(drawCard());
+        const total = calculateHandValue(playerHand);
+        term.writeln(
+          "👤 You drew: " + renderHand([playerHand[playerHand.length - 1]])
+        );
+        term.writeln(
+          "👤 Your Hand: " + renderHand(playerHand) + ` (Total: ${total})`
+        );
+        term.writeln("");
+        checkPlayerStatus();
+      }
+
+      function playerStands() {
+        if (!gameActive) return;
+        term.writeln("🧠 You stand. Dealer's turn...");
+        term.writeln("");
+        dealerTurn();
+      }
+
+      function dealerTurn() {
+        const reveal = renderHand(dealerHand);
+        let dealerTotal = calculateHandValue(dealerHand);
+
+        term.writeln(
+          "🤖 Dealer reveals: " + reveal + ` (Total: ${dealerTotal})`
+        );
+        term.writeln("");
+
+        const interval = setInterval(() => {
+          if (dealerTotal < 17) {
+            const card = drawCard();
+            dealerHand.push(card);
+            dealerTotal = calculateHandValue(dealerHand);
+            term.writeln(
+              "🤖 Dealer draws: " +
+                renderHand([card]) +
+                ` → Total: ${dealerTotal}`
+            );
+          } else {
+            clearInterval(interval);
+            determineWinner();
+          }
+        }, 1000);
+      }
+
+      function determineWinner() {
+        const playerTotal = calculateHandValue(playerHand);
+        const dealerTotal = calculateHandValue(dealerHand);
+
+        if (dealerTotal > 21 || playerTotal > dealerTotal) {
+          term.writeln("✅ You win!");
+          endGame("win");
+        } else if (dealerTotal > playerTotal) {
+          term.writeln("❌ Dealer wins!");
+          endGame("loss");
+        } else {
+          term.writeln("🤝 It's a draw.");
+          endGame("draw");
+        }
+      }
+
+      function endGame(result) {
+        gameActive = false;
+        const stats = loadStats();
+        stats.totalGames++;
+
+        if (result === "win") stats.wins++;
+        if (result === "loss") stats.losses++;
+        if (result === "draw") stats.draws++;
+        if (calculateHandValue(playerHand) === 21 && playerHand.length === 2)
+          stats.blackjacks++;
+
+        // Update history
+        const history =
+          JSON.parse(localStorage.getItem("blackjack_history")) || [];
+        history.unshift({
+          result,
+          player: calculateHandValue(playerHand),
+          dealer: calculateHandValue(dealerHand),
+          timestamp: new Date().toLocaleString(),
+        });
+        if (history.length > 5) history.pop();
+        localStorage.setItem("blackjack_history", JSON.stringify(history));
+
+        saveStats(stats);
+
+        term.writeln("\n🎲 Game Over.");
+        term.writeln("📊 Type 'stats' to view performance.");
+        term.writeln("🔁 Type 'start' to play again.");
+      }
+
+      // Command Parser
+      let commandBuffer = "";
+
+      term.onData((key) => {
+        // If Enter key is pressed
+        if (key === "\r") {
+          const cmd = commandBuffer.trim().toLowerCase();
+          commandBuffer = ""; // reset buffer
+          // term.writeln("");   // move to new line - Removed, clear handles this
+
+          // Execute command
+          switch (cmd) {
+            case "start":
+              startGame();
+              break;
+
+            case "hit":
+              // term.clear(); // Clear before showing new hand - Removed, let hit logic handle output
+              playerHits();
+              break;
+
+            case "stand":
+              // term.clear(); // Clear before showing dealer logic - Removed, let stand logic handle output
+              playerStands();
+              break;
+
+            case "rules":
+              term.clear(); // Clear before showing rules
+              writeTopBar();
+              term.writeln("📖 Blackjack Rules:");
+              term.writeln("1. Get as close to 21 without going over.");
+              term.writeln("2. Face cards = 10. Aces = 1 or 11.");
+              term.writeln("3. Type 'hit' to draw, 'stand' to end your turn.");
+              term.writeln("4. Dealer hits until 17+. Highest hand wins.");
+              break;
+
+            case "stats":
+              term.clear(); // Clean view for stats
+              writeTopBar();
+              const s = loadStats();
+              term.writeln("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+              term.writeln("📊 Game Stats:");
+              term.writeln("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+              term.writeln(`  Games Played : ${s.totalGames}`);
+              term.writeln(`  Wins         : ${s.wins}`);
+              term.writeln(`  Losses       : ${s.losses}`);
+              term.writeln(`  Draws        : ${s.draws}`);
+              term.writeln(`  Blackjacks   : ${s.blackjacks}`);
+              term.writeln(
+                `  Win Rate     : ${
+                  s.totalGames > 0
+                    ? ((s.wins / s.totalGames) * 100).toFixed(1)
+                    : 0
+                }%`
+              );
+              term.writeln("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+              break;
+
+            case "history":
+              term.clear(); // Clean view for history
+              writeTopBar();
+              const history =
+                JSON.parse(localStorage.getItem("blackjack_history")) || [];
+              if (history.length === 0) {
+                term.writeln("📭 No game history yet.");
+              } else {
+                term.writeln("🕓 Last 5 games:");
+                history.forEach((h, i) => {
+                  term.writeln(
+                    `${i + 1}. ${h.result.toUpperCase()} | You: ${
+                      h.player
+                    }, Dealer: ${h.dealer} | ${h.timestamp}`
+                  );
+                });
+              }
+              break;
+
+            case "reset stats":
+              term.clear();
+              writeTopBar();
+              resetStats(); // resetStats already prints a message
+              // term.writeln("🔄 Stats and history reset."); // Removed duplicate message
+              break;
+
+            case "clear":
+              term.clear();
+              writeTopBar();
+              term.writeln("🧼 Terminal cleared.");
+              term.writeln(
+                "Type 'start' to play, 'rules' to view how to play."
+              );
+              break;
+
+            case "":
+              break; // ignore empty input
+
+            default:
+              term.clear(); // Clear before showing error
+              writeTopBar();
+              term.writeln(`❓ Unknown command: '${cmd}'`);
+          }
+
+          // Only show prompt if game is not active or just ended
+          if (
+            !gameActive ||
+            [
+              "start",
+              "rules",
+              "stats",
+              "history",
+              "reset stats",
+              "clear",
+              "",
+            ].includes(cmd) ||
+            cmd.startsWith("?")
+          ) {
+            term.write("\r\n> "); // show prompt
+          }
+        }
+
+        // Backspace support
+        else if (key === "\u007F") {
+          if (commandBuffer.length > 0) {
+            commandBuffer = commandBuffer.slice(0, -1);
+            term.write("\b \b");
+          }
+        }
+
+        // Regular character
+        else {
+          commandBuffer += key;
+          term.write(key);
+        }
+      });
+
+      // Add initial prompt
+      term.write("> ");
+    </script>
+
+    <!-- How to Play Modal -->
+    <div
+      class="modal fade"
+      id="howToPlayModal"
+      tabindex="-1"
+      aria-labelledby="howToPlayLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content text-dark">
+          <div class="modal-header">
+            <h5 class="modal-title" id="howToPlayLabel">
+              How to Play Blackjack
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>🎯 The goal is to get as close to 21 without going over.</p>
+            <ul>
+              <li>Face cards = 10</li>
+              <li>Ace = 1 or 11</li>
+              <li>Type <code>hit</code> to draw a card</li>
+              <li>Type <code>stand</code> to end your turn</li>
+              <li>Dealer hits until 17+</li>
+            </ul>
+            <p>💥 Bust = total over 21. Highest hand wins!</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
