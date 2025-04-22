@@ -304,8 +304,10 @@
           term.write(char);          // show on terminal
         }
 
+        // Simulate pressing Enter
+        const enterKey = "\r";
         term.write("\r");            // show new line on terminal
-        term.onData.fire("\r");           // trigger Enter key properly
+        term._core._onData.fire(enterKey);
       }
 
       // Game Actions
